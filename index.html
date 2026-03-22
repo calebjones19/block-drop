@@ -688,7 +688,7 @@ function render() {
     const words = [['B','L','O','C','K'], ['D','R','O','P']];
     const hueStart = [[0,30,55,130,185],[220,265,295,335]];
     const titleH = 2 * (5 * gc) + rowGap;  // total title height
-    const ty0 = Math.round((132 - titleH) / 2); // vertically center in space above panels
+    const ty0 = 8; // small top margin, flush to top
 
     words.forEach((word, wi) => {
       const rowW = word.length * lw + (word.length - 1) * lg;
