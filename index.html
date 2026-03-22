@@ -436,12 +436,19 @@ function scheduleMusic() {
 }
 
 function startMusic() {
-  if (audioCtx) return;
+  if (audioCtx) {
+    // iOS/Android: context may be suspended even after gesture — resume it
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return;
+  }
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  melIdx = arpIdx = basIdx = padIdx = drIdx = 0;
-  melNext = arpNext = basNext = padNext = drNext = audioCtx.currentTime + 0.05;
-  scheduleMusic();
-  musicTimer = setInterval(scheduleMusic, TICK_MS);
+  // Must resume() — mobile browsers start context suspended
+  audioCtx.resume().then(() => {
+    melIdx = arpIdx = basIdx = padIdx = drIdx = 0;
+    melNext = arpNext = basNext = padNext = drNext = audioCtx.currentTime + 0.05;
+    scheduleMusic();
+    musicTimer = setInterval(scheduleMusic, TICK_MS);
+  });
 }
 
 function stopMusic() {
@@ -1040,7 +1047,15 @@ function fwdTouch(type, t) {
 }
 canvas.addEventListener('touchstart', e => { e.preventDefault(); fwdTouch('mousedown', e.touches[0]); },      { passive: false });
 canvas.addEventListener('touchmove',  e => { e.preventDefault(); fwdTouch('mousemove',  e.touches[0]); },      { passive: false });
-canvas.addEventListener('touchend',   e => { e.preventDefault(); fwdTouch('mouseup', e.changedTouches[0]); }, { passive: false });
+canvas.addEventListener('touchend',   e => { e.preventDefault(); fwdTouch('mouseup', e.changedTouches[0]); fwdTouch('click', e.changedTouches[0]); }, { passive: false });
+
+// ── Audio unlock (iOS/Android require resume() on every user gesture) ──────
+function unlockAudio() {
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+document.addEventListener('touchstart', unlockAudio, { passive: true });
+document.addEventListener('touchend',   unlockAudio, { passive: true });
+document.addEventListener('click',      unlockAudio, { passive: true });
 
 // ── Start ──────────────────────────────────────────────────────────────────
 initGame();
