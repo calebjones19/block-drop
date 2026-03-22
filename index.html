@@ -14,16 +14,24 @@
   <meta name="twitter:description" content="A block puzzle game by Max. Drop and clear blocks to score!">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
     body {
       background: #0f0f23;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
+      height: 100vh;
       user-select: none;
       -webkit-user-select: none;
     }
-    canvas { display: block; cursor: default; }
+    canvas {
+      display: block;
+      cursor: default;
+      touch-action: none;
+    }
 
     #settings-overlay {
       position: fixed; inset: 0;
@@ -143,6 +151,18 @@ const CANVAS_H = BTN_Y + BTN_H + 32;
 
 canvas.width  = CANVAS_W;
 canvas.height = CANVAS_H;
+
+// ── Responsive scaling ─────────────────────────────────────────────────────
+function fitCanvas() {
+  const scale = Math.min(1,
+    window.innerWidth  / CANVAS_W,
+    window.innerHeight / CANVAS_H
+  );
+  canvas.style.width  = Math.round(CANVAS_W * scale) + 'px';
+  canvas.style.height = Math.round(CANVAS_H * scale) + 'px';
+}
+window.addEventListener('resize', fitCanvas);
+fitCanvas();
 
 // ── Piece definitions ──────────────────────────────────────────────────────
 const TETROMINOES = [
