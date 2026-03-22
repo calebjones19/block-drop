@@ -12,6 +12,12 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Block Drop">
   <meta name="twitter:description" content="A block puzzle game by Max. Drop and clear blocks to score!">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Block Drop">
+  <meta name="theme-color" content="#0f0f23">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" id="apple-icon" href="icon.png">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
@@ -1097,6 +1103,67 @@ initGame();
   sMedium.addEventListener('click', () => setDiff('medium'));
   sHard.addEventListener('click',   () => setDiff('hard'));
 
+}());
+
+// ── App icon (home screen / favicon) ───────────────────────────────────────
+(function () {
+  const sz = 512;
+  const c  = document.createElement('canvas');
+  c.width  = c.height = sz;
+  const cx = c.getContext('2d');
+
+  // Dark rounded background
+  cx.fillStyle = '#0f0f23';
+  cx.beginPath();
+  cx.roundRect(0, 0, sz, sz, sz * 0.18);
+  cx.fill();
+
+  // 5×5 tetris block grid
+  const layout = [
+    ['#fb923c','#fb923c', null,    '#a855f7','#a855f7'],
+    ['#fb923c', null,    '#fbbf24', null,    '#a855f7'],
+    ['#4ade80','#4ade80','#fbbf24', null,    '#60a5fa'],
+    [ null,    '#4ade80', null,    '#60a5fa','#60a5fa'],
+    ['#22d3ee','#22d3ee','#22d3ee','#22d3ee', null   ],
+  ];
+
+  const margin = sz * 0.1;
+  const cell   = (sz - margin * 2) / 5;
+  const bs     = cell - 8;
+
+  layout.forEach((row, r) => {
+    row.forEach((color, col) => {
+      if (!color) return;
+      const x = margin + col * cell + 4;
+      const y = margin + r   * cell + 4;
+
+      // Drop shadow
+      cx.fillStyle = 'rgba(0,0,0,0.35)';
+      cx.beginPath(); cx.roundRect(x + 4, y + 4, bs, bs, 10); cx.fill();
+
+      // Block face
+      cx.fillStyle = color;
+      cx.beginPath(); cx.roundRect(x, y, bs, bs, 10); cx.fill();
+
+      // Top-left highlight (glass sheen)
+      cx.fillStyle = 'rgba(255,255,255,0.30)';
+      cx.beginPath(); cx.roundRect(x + 4, y + 4, bs - 8, bs * 0.38, 6); cx.fill();
+
+      // Bottom shadow strip
+      cx.fillStyle = 'rgba(0,0,0,0.18)';
+      cx.fillRect(x, y + bs - 8, bs, 8);
+    });
+  });
+
+  const url = c.toDataURL('image/png');
+
+  // Favicon
+  const fav = document.createElement('link');
+  fav.rel = 'icon'; fav.type = 'image/png'; fav.href = url;
+  document.head.appendChild(fav);
+
+  // Apple touch icon (iOS home screen)
+  document.getElementById('apple-icon').href = url;
 }());
 </script>
 </body>
