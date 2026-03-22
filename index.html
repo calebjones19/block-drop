@@ -1168,8 +1168,11 @@ canvas.addEventListener('touchstart', e => { e.preventDefault(); fwdTouch('mouse
 canvas.addEventListener('touchmove',  e => { e.preventDefault(); fwdTouch('mousemove',  e.touches[0]); },      { passive: false });
 canvas.addEventListener('touchend',   e => { e.preventDefault(); fwdTouch('mouseup', e.changedTouches[0]); fwdTouch('click', e.changedTouches[0]); }, { passive: false });
 
-// ── Donation modal (every visit) ──────────────────────────────────────────
+// ── Donation modal (once per session — works for browser + installed PWA) ──
 (function () {
+  if (sessionStorage.getItem('donate-shown')) return;
+  sessionStorage.setItem('donate-shown', '1');
+
   const overlay = document.getElementById('donate-overlay');
   const btn     = document.getElementById('donate-btn');
   const skip    = document.getElementById('donate-skip');
