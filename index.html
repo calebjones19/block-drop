@@ -88,6 +88,53 @@
     .diff-btn.active { background: #fbbf2422; border-color: #fbbf24; color: #fbbf24; }
     .s-divider { border: none; border-top: 1px solid #2a2a4a; margin: 4px 0 18px; }
 
+    /* ── Donation modal ── */
+    #donate-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.78);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 400;
+    }
+    #donate-modal {
+      background: #16213e;
+      border: 1.5px solid #4a4a6a;
+      border-radius: 18px;
+      padding: 28px 26px 22px;
+      width: 300px;
+      font-family: monospace;
+      text-align: center;
+      animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes popIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    #donate-modal .dm-icon { font-size: 42px; margin-bottom: 10px; }
+    #donate-modal h2 {
+      color: #fbbf24; font-size: 17px; font-weight: bold;
+      margin-bottom: 10px; letter-spacing: 0.5px;
+    }
+    #donate-modal p {
+      color: #9999cc; font-size: 13px; line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    #donate-modal p b { color: #fff; }
+    #donate-btn {
+      display: block; width: 100%;
+      background: #3d95ce; border: none; border-radius: 10px;
+      color: #fff; font-family: monospace; font-size: 14px;
+      font-weight: bold; padding: 13px;
+      cursor: pointer; margin-bottom: 10px;
+      transition: background 0.15s;
+    }
+    #donate-btn:hover { background: #5aaee0; }
+    #donate-skip {
+      background: none; border: none; color: #6666aa;
+      font-family: monospace; font-size: 12px;
+      cursor: pointer; padding: 6px;
+    }
+    #donate-skip:hover { color: #9999cc; }
+
     /* ── iOS install banner ── */
     #install-banner {
       position: fixed;
@@ -138,6 +185,16 @@
 </head>
 <body>
 <canvas id="game"></canvas>
+
+<div id="donate-overlay" style="display:none">
+  <div id="donate-modal">
+    <div class="dm-icon">🎮</div>
+    <h2>Enjoying Block Drop?</h2>
+    <p>This game was built by <b>Max</b> — he's 9 years old and would love your support to keep building cool stuff!</p>
+    <button id="donate-btn">💙 Support Max on Venmo</button>
+    <button id="donate-skip">Maybe later</button>
+  </div>
+</div>
 
 <div id="install-banner" style="display:none">
   <div class="ib-icon">🎮</div>
@@ -1109,6 +1166,27 @@ function fwdTouch(type, t) {
 canvas.addEventListener('touchstart', e => { e.preventDefault(); fwdTouch('mousedown', e.touches[0]); },      { passive: false });
 canvas.addEventListener('touchmove',  e => { e.preventDefault(); fwdTouch('mousemove',  e.touches[0]); },      { passive: false });
 canvas.addEventListener('touchend',   e => { e.preventDefault(); fwdTouch('mouseup', e.changedTouches[0]); fwdTouch('click', e.changedTouches[0]); }, { passive: false });
+
+// ── Donation modal (first visit only) ─────────────────────────────────────
+(function () {
+  if (localStorage.getItem('donate-seen')) return;
+  const overlay = document.getElementById('donate-overlay');
+  const btn     = document.getElementById('donate-btn');
+  const skip    = document.getElementById('donate-skip');
+
+  setTimeout(() => overlay.style.display = 'flex', 1500);
+
+  function close() {
+    overlay.style.display = 'none';
+    localStorage.setItem('donate-seen', '1');
+  }
+
+  btn.addEventListener('click', () => {
+    window.open('https://venmo.com/u/calebjones19', '_blank');
+    close();
+  });
+  skip.addEventListener('click', close);
+}());
 
 // ── Service worker (PWA / offline support) ─────────────────────────────────
 if ('serviceWorker' in navigator) {
