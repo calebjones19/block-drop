@@ -1167,19 +1167,15 @@ canvas.addEventListener('touchstart', e => { e.preventDefault(); fwdTouch('mouse
 canvas.addEventListener('touchmove',  e => { e.preventDefault(); fwdTouch('mousemove',  e.touches[0]); },      { passive: false });
 canvas.addEventListener('touchend',   e => { e.preventDefault(); fwdTouch('mouseup', e.changedTouches[0]); fwdTouch('click', e.changedTouches[0]); }, { passive: false });
 
-// ── Donation modal (first visit only) ─────────────────────────────────────
+// ── Donation modal (every visit) ──────────────────────────────────────────
 (function () {
-  if (localStorage.getItem('donate-seen')) return;
   const overlay = document.getElementById('donate-overlay');
   const btn     = document.getElementById('donate-btn');
   const skip    = document.getElementById('donate-skip');
 
   setTimeout(() => overlay.style.display = 'flex', 1500);
 
-  function close() {
-    overlay.style.display = 'none';
-    localStorage.setItem('donate-seen', '1');
-  }
+  function close() { overlay.style.display = 'none'; }
 
   btn.addEventListener('click', () => {
     window.open('https://venmo.com/u/calebjones19', '_blank');
