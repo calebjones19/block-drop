@@ -88,10 +88,65 @@
     .diff-btn.active { background: #fbbf2422; border-color: #fbbf24; color: #fbbf24; }
     .s-divider { border: none; border-top: 1px solid #2a2a4a; margin: 4px 0 18px; }
 
+    /* ── iOS install banner ── */
+    #install-banner {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #16213e;
+      border-top: 1.5px solid #4a4a6a;
+      padding: 14px 18px env(safe-area-inset-bottom, 18px);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      z-index: 300;
+      animation: bannerUp 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes bannerUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    #install-banner .ib-icon {
+      width: 48px; height: 48px; flex-shrink: 0;
+      background: #0f0f23; border-radius: 12px;
+      border: 1.5px solid #2a2a4a;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+    }
+    #install-banner .ib-text { flex: 1; }
+    #install-banner .ib-text strong {
+      display: block; color: #fff;
+      font-family: monospace; font-size: 14px; margin-bottom: 3px;
+    }
+    #install-banner .ib-text span {
+      color: #9999cc; font-family: monospace; font-size: 12px; line-height: 1.4;
+    }
+    #install-banner .ib-text .share-icon {
+      display: inline-block;
+      background: #22d3ee; color: #0f0f23;
+      border-radius: 4px; padding: 1px 5px;
+      font-size: 11px; font-weight: bold;
+    }
+    #ib-dismiss {
+      background: none; border: 1px solid #4a4a6a;
+      color: #9999cc; border-radius: 6px;
+      padding: 6px 10px; font-size: 12px;
+      font-family: monospace; cursor: pointer; flex-shrink: 0;
+    }
+    #ib-dismiss:hover { color: #fff; border-color: #9999cc; }
+
   </style>
 </head>
 <body>
 <canvas id="game"></canvas>
+
+<div id="install-banner" style="display:none">
+  <div class="ib-icon">🎮</div>
+  <div class="ib-text">
+    <strong>Add Block Drop to your home screen!</strong>
+    <span>Tap <span class="share-icon">⬆ Share</span> then <b style="color:#fff">Add to Home Screen</b></span>
+  </div>
+  <button id="ib-dismiss">Got it</button>
+</div>
 
 <div id="settings-overlay">
   <div id="settings-modal">
@@ -1054,6 +1109,28 @@ function fwdTouch(type, t) {
 canvas.addEventListener('touchstart', e => { e.preventDefault(); fwdTouch('mousedown', e.touches[0]); },      { passive: false });
 canvas.addEventListener('touchmove',  e => { e.preventDefault(); fwdTouch('mousemove',  e.touches[0]); },      { passive: false });
 canvas.addEventListener('touchend',   e => { e.preventDefault(); fwdTouch('mouseup', e.changedTouches[0]); fwdTouch('click', e.changedTouches[0]); }, { passive: false });
+
+// ── Service worker (PWA / offline support) ─────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+// ── iOS "Add to Home Screen" banner ────────────────────────────────────────
+(function () {
+  const isIOS        = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true;
+  const seen         = localStorage.getItem('ib-seen');
+  if (!isIOS || isStandalone || seen) return;
+
+  const banner  = document.getElementById('install-banner');
+  const dismiss = document.getElementById('ib-dismiss');
+  // Show after a short delay so the game loads first
+  setTimeout(() => banner.style.display = 'flex', 2000);
+  dismiss.addEventListener('click', () => {
+    banner.style.display = 'none';
+    localStorage.setItem('ib-seen', '1');
+  });
+}());
 
 // ── Audio unlock (iOS/Android require resume() on every user gesture) ──────
 function unlockAudio() {
