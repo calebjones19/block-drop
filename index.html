@@ -255,6 +255,48 @@ const TITLE_GLYPHS = {
 const TITLE_LETTERS = ['B','L','O','C','K','D','R','O','P'];
 const TITLE_HUES    = [0, 30, 55, 130, 185, 220, 265, 295, 335];
 
+// ── Pre-render title once to offscreen canvas ─────────────────────────────
+const titleCache = (function () {
+  const gc = 7, bs = 5, lw = 5 * gc, lg = 2 * gc, rowGap = 10;
+  const words = [['B','L','O','C','K'], ['D','R','O','P']];
+  const hueStart = [[0,30,55,130,185],[220,265,295,335]];
+  const cacheH = 2 * (5 * gc) + rowGap + 16;
+  const oc = document.createElement('canvas');
+  oc.width = CANVAS_W; oc.height = cacheH;
+  const cx = oc.getContext('2d');
+  const ty0 = 8;
+  words.forEach((word, wi) => {
+    const rowW = word.length * lw + (word.length - 1) * lg;
+    let tx = Math.round(CANVAS_W / 2 - rowW / 2);
+    const ty = ty0 + wi * (5 * gc + rowGap);
+    word.forEach((ch, li) => {
+      const glyph = TITLE_GLYPHS[ch];
+      const baseHue = hueStart[wi][li];
+      cx.save();
+      cx.shadowBlur = 10;
+      cx.shadowColor = `hsl(${baseHue},90%,62%)`;
+      glyph.forEach((row, r) => {
+        row.forEach((cell, c) => {
+          if (!cell) return;
+          const px = tx + c * gc + 1, py = ty + r * gc + 1;
+          const h = ((baseHue + r * 16 - c * 10) % 360 + 360) % 360;
+          cx.fillStyle = `hsl(${h},85%,${44 + r * 3}%)`;
+          cx.fillRect(px, py, bs, bs);
+          cx.fillStyle = 'rgba(255,255,255,0.42)';
+          cx.fillRect(px, py, bs, 2);
+          cx.fillRect(px, py, 2, bs - 1);
+          cx.fillStyle = 'rgba(0,0,0,0.22)';
+          cx.fillRect(px, py + bs - 2, bs, 2);
+          cx.fillRect(px + bs - 2, py + 2, 2, bs - 2);
+        });
+      });
+      cx.restore();
+      tx += lw + lg;
+    });
+  });
+  return oc;
+}());
+
 const BOARD_VISUAL_X = BOARD_X - 6;             // board bg starts 6px left of grid
 const BOARD_VISUAL_W = BOARD_W + 12;            // board bg is 12px wider than grid
 const SLOT_GAP = 9;
@@ -805,56 +847,8 @@ function render() {
   ctx.fillStyle = '#0f0f23';
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
-  // ── Title: BLOCK / DROP — stained glass pixel font ───────────────────────
-  {
-    const gc = 7, bs = 5;           // grid cell 7px, block 5px → 2px lead line
-    const lw = 5 * gc;              // one letter = 35px wide
-    const lg = 2 * gc;              // gap between letters = 14px
-    const rowGap = 10;              // vertical gap between BLOCK and DROP rows
-    const words = [['B','L','O','C','K'], ['D','R','O','P']];
-    const hueStart = [[0,30,55,130,185],[220,265,295,335]];
-    const titleH = 2 * (5 * gc) + rowGap;  // total title height
-    const ty0 = 8; // small top margin, flush to top
-
-    words.forEach((word, wi) => {
-      const rowW = word.length * lw + (word.length - 1) * lg;
-      let tx = Math.round(CANVAS_W / 2 - rowW / 2);
-      const ty = ty0 + wi * (5 * gc + rowGap);
-
-      word.forEach((ch, li) => {
-        const glyph = TITLE_GLYPHS[ch];
-        const baseHue = hueStart[wi][li];
-
-        ctx.save();
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = `hsl(${baseHue},90%,62%)`;
-
-        glyph.forEach((row, r) => {
-          row.forEach((cell, c) => {
-            if (!cell) return;
-            const px = tx + c * gc + 1;
-            const py = ty + r * gc + 1;
-            // Stained glass: hue drifts with position
-            const h = ((baseHue + r * 16 - c * 10) % 360 + 360) % 360;
-            ctx.fillStyle = `hsl(${h},85%,${44 + r * 3}%)`;
-            ctx.fillRect(px, py, bs, bs);
-            // Top-left highlight (light through glass)
-            ctx.fillStyle = 'rgba(255,255,255,0.42)';
-            ctx.fillRect(px, py, bs, 2);
-            ctx.fillRect(px, py, 2, bs - 1);
-            // Bottom-right shadow
-            ctx.fillStyle = 'rgba(0,0,0,0.22)';
-            ctx.fillRect(px, py + bs - 2, bs, 2);
-            ctx.fillRect(px + bs - 2, py + 2, 2, bs - 2);
-          });
-        });
-
-        ctx.restore();
-        tx += lw + lg;
-      });
-    });
-    ctx.textAlign = 'left';
-  }
+  // ── Title: draw from cache (pre-rendered offscreen) ──────────────────────
+  ctx.drawImage(titleCache, 0, 0);
 
   // ── Three equal panels — aligned to board visual edges (BOARD_X-6 … BOARD_X+BOARD_W+6)
   const panelGap = 9;
@@ -1110,9 +1104,16 @@ canvas.addEventListener('mousedown', e => {
   }
 });
 
+let rafPending = false;
+function scheduleRender() {
+  if (rafPending) return;
+  rafPending = true;
+  requestAnimationFrame(() => { rafPending = false; render(); });
+}
+
 canvas.addEventListener('mousemove', e => {
   const { x, y } = getPos(e);
-  if (dragging) { dragging.mouseX = x; dragging.mouseY = y; render(); return; }
+  if (dragging) { dragging.mouseX = x; dragging.mouseY = y; scheduleRender(); return; }
 
   let over = false;
   for (let i = 0; i < 3; i++) {
